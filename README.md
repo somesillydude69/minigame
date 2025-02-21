@@ -1,7 +1,7 @@
 # minigame
 
 
-# Simple you install the flappy script and run python on it 
+# Git clone this repo for the minigame 🔥 
 git clone https://github.com/somesillydude69/minigame
 
 
