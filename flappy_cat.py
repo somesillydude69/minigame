@@ -12,7 +12,7 @@ PIPE_GAP = 170
 PIPE_WIDTH = 70
 PIPE_VELOCITY = 3
 MAX_FALL_SPEED = 10
-BIRD_JUMP_SOUND = 'jump.wav'
+Cat_JUMP_SOUND = 'jump.wav'
 GAME_OVER_SOUND = 'game_over.wav'
 
 # Colors
@@ -23,7 +23,7 @@ BLACK = (0, 0, 0)
 
 # Load Sounds
 pygame.mixer.init()
-jump_sound = pygame.mixer.Sound(BIRD_JUMP_SOUND)
+jump_sound = pygame.mixer.Sound(Cat_JUMP_SOUND)
 game_over_sound = pygame.mixer.Sound(GAME_OVER_SOUND)
 
 # Set up display
@@ -31,17 +31,19 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 36)
 
-# Load Bird Image
+# Load Cat Image
 cat_image = pygame.image.load('cat.png')
 cat_image = pygame.transform.scale(cat_image, (40, 30))
 
-# cat class
+# Cat class
 class Cat:
     def __init__(self):
         self.x = 100
         self.y = HEIGHT // 2
         self.velocity = 0
         self.angle = 0
+        self.width = 40
+        self.height = 30
     
     def flap(self):
         self.velocity = FLAP_STRENGTH
@@ -58,11 +60,16 @@ class Cat:
         rotated_cat = pygame.transform.rotate(cat_image, self.angle)
         screen.blit(rotated_cat, (self.x, int(self.y)))
     
+    def get_rect(self):
+        return pygame.Rect(self.x, self.y, self.width, self.height)
+
 # Pipe class
 class Pipe:
     def __init__(self, x):
         self.x = x
-        self.height = random.randint(100, HEIGHT - PIPE_GAP - 100)
+        min_height = 100
+        max_height = HEIGHT - PIPE_GAP - min_height
+        self.height = random.randint(min_height, max_height)
     
     def move(self):
         self.x -= PIPE_VELOCITY
@@ -71,13 +78,19 @@ class Pipe:
         pygame.draw.rect(screen, GREEN, (self.x, 0, PIPE_WIDTH, self.height))
         pygame.draw.rect(screen, GREEN, (self.x, self.height + PIPE_GAP, PIPE_WIDTH, HEIGHT))
     
+    def get_rects(self):
+        return [
+            pygame.Rect(self.x, 0, PIPE_WIDTH, self.height),
+            pygame.Rect(self.x, self.height + PIPE_GAP, PIPE_WIDTH, HEIGHT - self.height - PIPE_GAP)
+        ]
+
 # Main Menu Function
 def main_menu():
     alpha = 0
     menu_running = True
     while menu_running:
         screen.fill(WHITE)
-        title_text = font.render("Flappy Bird", True, BLACK)
+        title_text = font.render("Flappy Cat", True, BLACK)
         start_text = font.render("Press SPACE to Start", True, BLACK)
         title_text.set_alpha(alpha)
         start_text.set_alpha(alpha)
@@ -111,17 +124,15 @@ def game_loop():
         cat.move()
         cat.draw()
         
-        
         for pipe in pipes:
             pipe.move()
             pipe.draw()
             if pipe.x + PIPE_WIDTH < 0:
                 pipes.remove(pipe)
-                pipes.append(Pipe(WIDTH + random.randint(50, 150)))
+                pipes.append(Pipe(WIDTH + random.randint(200, 300)))
                 score += 1
             
-            if (cat.x + 20 > pipe.x and cat.x - 20 < pipe.x + PIPE_WIDTH and
-                (cat.y - 15 < pipe.height or cat.y + 15 > pipe.height + PIPE_GAP)):
+            if cat.get_rect().collidelist(pipe.get_rects()) != -1:
                 game_over_sound.play()
                 pygame.time.delay(1000)
                 return  # Restart the game
