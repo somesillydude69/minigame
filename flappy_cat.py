@@ -5,11 +5,11 @@ import random
 pygame.init()
 
 # Game Constants
-WIDTH, HEIGHT = 400, 600
+WIDTH, HEIGHT = 1920, 1080
 GRAVITY = 0.5
 FLAP_STRENGTH = -8
-PIPE_GAP = 170
-PIPE_WIDTH = 70
+PIPE_GAP = 200
+PIPE_WIDTH = random.randint(60, 100)  # Pipes have varying widths
 PIPE_VELOCITY = 3
 MAX_FALL_SPEED = 10
 Cat_JUMP_SOUND = 'jump.wav'
@@ -27,23 +27,71 @@ jump_sound = pygame.mixer.Sound(Cat_JUMP_SOUND)
 game_over_sound = pygame.mixer.Sound(GAME_OVER_SOUND)
 
 # Set up display
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 clock = pygame.time.Clock()
-font = pygame.font.Font(None, 36)
+font = pygame.font.Font(None, 72)
 
-# Load Cat Image
-cat_image = pygame.image.load('cat.png')
-cat_image = pygame.transform.scale(cat_image, (40, 30))
+# Load Cat Images
+skins = ['cat1.png', 'cat2.png', 'cat3.png']
+skin_index = 0
+cat_image = pygame.image.load(skins[skin_index])
+cat_image = pygame.transform.scale(cat_image, (80, 60))
+
+# Pause Function
+def pause_menu():
+    paused = True
+    while paused:
+        screen.fill(WHITE)
+        pause_text = font.render("Paused - Press ESC to Resume", True, BLACK)
+        screen.blit(pause_text, (WIDTH//2 - pause_text.get_width()//2, HEIGHT//2))
+        pygame.display.update()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                paused = False
+
+# Skin Selection Menu
+def skin_menu():
+    global skin_index, cat_image
+    menu_running = True
+    while menu_running:
+        screen.fill(WHITE)
+        title_text = font.render("Select Your Cat", True, BLACK)
+        next_text = font.render("Press N to change skin", True, BLACK)
+        start_text = font.render("Press SPACE to Start", True, BLACK)
+        screen.blit(title_text, (WIDTH//2 - title_text.get_width()//2, HEIGHT//4))
+        screen.blit(next_text, (WIDTH//2 - next_text.get_width()//2, HEIGHT//2))
+        screen.blit(start_text, (WIDTH//2 - start_text.get_width()//2, HEIGHT//1.5))
+        
+        selected_cat = pygame.image.load(skins[skin_index])
+        selected_cat = pygame.transform.scale(selected_cat, (160, 120))
+        screen.blit(selected_cat, (WIDTH//2 - 80, HEIGHT//3))
+        
+        pygame.display.update()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_n:
+                    skin_index = (skin_index + 1) % len(skins)
+                    cat_image = pygame.image.load(skins[skin_index])
+                    cat_image = pygame.transform.scale(cat_image, (80, 60))
+                if event.key == pygame.K_SPACE:
+                    menu_running = False
 
 # Cat class
 class Cat:
     def __init__(self):
-        self.x = 100
+        self.x = 200
         self.y = HEIGHT // 2
         self.velocity = 0
         self.angle = 0
-        self.width = 40
-        self.height = 30
+        self.width = 80
+        self.height = 60
     
     def flap(self):
         self.velocity = FLAP_STRENGTH
@@ -67,49 +115,34 @@ class Cat:
 class Pipe:
     def __init__(self, x):
         self.x = x
-        min_height = 100
+        min_height = 200
         max_height = HEIGHT - PIPE_GAP - min_height
         self.height = random.randint(min_height, max_height)
+        self.width = random.randint(60, 100)
+        self.moving = random.choice([True, False])
+        self.direction = 1 if random.random() > 0.5 else -1
     
     def move(self):
         self.x -= PIPE_VELOCITY
+        if self.moving:
+            self.height += self.direction * 2
+            if self.height < 150 or self.height > HEIGHT - PIPE_GAP - 150:
+                self.direction *= -1
     
     def draw(self):
-        pygame.draw.rect(screen, GREEN, (self.x, 0, PIPE_WIDTH, self.height))
-        pygame.draw.rect(screen, GREEN, (self.x, self.height + PIPE_GAP, PIPE_WIDTH, HEIGHT))
+        pygame.draw.rect(screen, GREEN, (self.x, 0, self.width, self.height))
+        pygame.draw.rect(screen, GREEN, (self.x, self.height + PIPE_GAP, self.width, HEIGHT))
     
     def get_rects(self):
         return [
-            pygame.Rect(self.x, 0, PIPE_WIDTH, self.height),
-            pygame.Rect(self.x, self.height + PIPE_GAP, PIPE_WIDTH, HEIGHT - self.height - PIPE_GAP)
+            pygame.Rect(self.x, 0, self.width, self.height),
+            pygame.Rect(self.x, self.height + PIPE_GAP, self.width, HEIGHT - self.height - PIPE_GAP)
         ]
-
-# Main Menu Function
-def main_menu():
-    alpha = 0
-    menu_running = True
-    while menu_running:
-        screen.fill(WHITE)
-        title_text = font.render("Flappy Cat", True, BLACK)
-        start_text = font.render("Press SPACE to Start", True, BLACK)
-        title_text.set_alpha(alpha)
-        start_text.set_alpha(alpha)
-        screen.blit(title_text, (WIDTH//2 - title_text.get_width()//2, HEIGHT//3))
-        screen.blit(start_text, (WIDTH//2 - start_text.get_width()//2, HEIGHT//2))
-        pygame.display.update()
-        alpha = min(alpha + 5, 255)
-        pygame.time.delay(30)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                menu_running = False
 
 # Game Loop
 def game_loop():
     cat = Cat()
-    pipes = [Pipe(WIDTH + i * 200) for i in range(3)]
+    pipes = [Pipe(WIDTH + i * 400) for i in range(3)]
     score = 0
     running = True
     
@@ -118,8 +151,11 @@ def game_loop():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                cat.flap()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    cat.flap()
+                if event.key == pygame.K_ESCAPE:
+                    pause_menu()
         
         cat.move()
         cat.draw()
@@ -127,38 +163,29 @@ def game_loop():
         for pipe in pipes:
             pipe.move()
             pipe.draw()
-            if pipe.x + PIPE_WIDTH < 0:
+            if pipe.x + pipe.width < 0:
                 pipes.remove(pipe)
-                pipes.append(Pipe(WIDTH + random.randint(200, 300)))
+                pipes.append(Pipe(WIDTH + random.randint(400, 600)))
                 score += 1
             
             if cat.get_rect().collidelist(pipe.get_rects()) != -1:
                 game_over_sound.play()
                 pygame.time.delay(1000)
-                return  # Restart the game
+                return
         
-        if cat.y + 15 > HEIGHT or cat.y - 15 < 0:
+        if cat.y + 30 > HEIGHT or cat.y - 30 < 0:
             game_over_sound.play()
             pygame.time.delay(1000)
-            return  # Restart the game
+            return
         
         score_text = font.render(f"Score: {score}", True, BLACK)
-        screen.blit(score_text, (10, 10))
+        screen.blit(score_text, (50, 50))
         
         pygame.display.update()
-        clock.tick(30)
-
-# Credits Screen
-def credits_screen():
-    screen.fill(WHITE)
-    credits_text = font.render("Made by /home/green_cat", True, BLACK)
-    screen.blit(credits_text, (WIDTH//2 - credits_text.get_width()//2, HEIGHT//2))
-    pygame.display.update()
-    pygame.time.delay(2000)  # Show credits for 2 seconds
+        clock.tick(60)
 
 while True:
-    main_menu()
+    skin_menu()
     game_loop()
-    credits_screen()
 
 pygame.quit()
