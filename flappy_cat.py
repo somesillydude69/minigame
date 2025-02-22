@@ -31,8 +31,8 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 72)
 
-# Load Cat Images
-skins = ['cat1.png', 'cat2.png', 'cat3.png']
+# Load Car Images
+skins = ['cat1.png', 'cat2.png', 'cat3.png', 'cat4.png', 'cat5.png']
 skin_index = 0
 cat_image = pygame.image.load(skins[skin_index])
 cat_image = pygame.transform.scale(cat_image, (80, 60))
